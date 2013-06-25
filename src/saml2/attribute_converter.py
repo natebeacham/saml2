@@ -255,15 +255,15 @@ class AttributeConverter(object):
 
                 for ex in ext:
                     if isinstance(ex, NameID):
-                        cval = {}
+                        cval = ''
                         for key, (name, type, mul) in ex.c_attributes.items():
                             exv = getattr(ex, name)
-                            if exv:
-                                cval[name] = exv
+                            if exv and name in ['text', 'value']:
+                                cval = exv
 
-                        if ex.text:
-                            cval["text"] = ex.text.strip()
-                        val.append(urllib.urlencode(cval))
+                        if ex.text and not cval:
+                            cval = ex.text.strip()
+                        val.append(cval)
             elif not value.text:
                 val.append('')
             else:
