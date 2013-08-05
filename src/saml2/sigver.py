@@ -42,6 +42,8 @@ from subprocess import Popen, PIPE
 
 SIG = "{%s#}%s" % (ds.NAMESPACE, "Signature")
 
+__DEBUG = 0
+
 def signed(item):
     if SIG in item.c_children.keys() and item.signature:
         return True
@@ -259,7 +261,7 @@ def make_temp(string, suffix="", decode=True):
         close the file) and filename (which is for instance needed by the 
         xmlsec function).
     """
-    ntf = NamedTemporaryFile(suffix=suffix)
+    ntf = NamedTemporaryFile(suffix=suffix, delete=not __DEBUG)
     if decode:
         ntf.write(base64.b64decode(string))
     else:
@@ -315,8 +317,6 @@ def _parse_xmlsec_output(output):
         elif line == "FAIL":
             raise XmlsecError(output)
     raise XmlsecError(output)
-
-__DEBUG = 0
 
 def verify_signature(enctext, xmlsec_binary, cert_file=None, cert_type="pem",
                         node_name=NODE_NAME, debug=False, node_id=None,
@@ -441,13 +441,13 @@ def security_context(conf, log=None, debug=None):
     return SecurityContext(conf.xmlsec_binary, conf.key_file,
                     cert_file=conf.cert_file, metadata=metadata,
                     log=log, debug=debug,
-                    only_use_keys_in_metadata=_only_md)
+                    only_use_keys_in_metadata=_only_md, verify=getattr(conf, 'verify_signatures', True))
 
 class SecurityContext(object):
     def __init__(self, xmlsec_binary, key_file="", key_type= "pem", 
                     cert_file="", cert_type="pem", metadata=None, log=None, 
                     debug=False, template="", encrypt_key_type="des-192",
-                    only_use_keys_in_metadata=False):
+                    only_use_keys_in_metadata=False, verify=True):
         
         self.xmlsec = xmlsec_binary
         
@@ -464,6 +464,7 @@ class SecurityContext(object):
         self.only_use_keys_in_metadata = only_use_keys_in_metadata
         self.log = log
         self.debug = debug
+        self.verify = verify
         
         if not template:
             this_dir, this_filename = os.path.split(__file__)
@@ -501,7 +502,7 @@ class SecurityContext(object):
         if self.log:
             self.log.info("input len: %d" % len(text))
         _, fil = make_temp("%s" % text, decode=False)
-        ntf = NamedTemporaryFile()
+        ntf = NamedTemporaryFile(delete=not __DEBUG)
 
         com_list = [self.xmlsec, "--encrypt",
                      "--pubkey-pem", recv_key,
@@ -534,7 +535,7 @@ class SecurityContext(object):
         if self.log:
             self.log.info("input len: %d" % len(enctext))
         _, fil = make_temp("%s" % enctext, decode=False)
-        ntf = NamedTemporaryFile()
+        ntf = NamedTemporaryFile(delete=not __DEBUG)
 
         com_list = [self.xmlsec, "--decrypt", 
                      "--privkey-pem", self.key_file, 
@@ -572,6 +573,10 @@ class SecurityContext(object):
         """
         # This is only for testing purposes, otherwise when would you receive
         # stuff that is signed with your key !?
+
+        if not self.verify:
+            return True
+
         if not cert_file:
             cert_file = self.cert_file
             cert_type = self.cert_type
@@ -806,7 +811,7 @@ class SecurityContext(object):
         _, fil = make_temp("%s" % statement, decode=False)
 
 
-        ntf = NamedTemporaryFile()
+        ntf = NamedTemporaryFile(delete=not __DEBUG)
 
         com_list = [self.xmlsec, "--sign", 
                     "--output", ntf.name,

@@ -43,6 +43,7 @@ SP_ARGS = [
             "ui_info",
             "discovery_response",
             "allow_unsolicited",
+            "verify_signatures",
             "ecp"
             ]
 

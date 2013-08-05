@@ -131,6 +131,11 @@ class Saml2Client(object):
         else:
             self.allow_unsolicited = False
 
+        if "verify_signatures" in self.config:
+            self.verify_signatures = self.config.verify_signatures
+        else:
+            self.verify_signatures = True
+
         if getattr(self.config, 'authn_requests_signed', 'false') == 'true':
             self.authn_requests_signed_default = True
         else:
