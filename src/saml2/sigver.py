@@ -339,7 +339,7 @@ def verify_signature(enctext, xmlsec_binary, cert_file=None, cert_type="pem",
 
     _, fil = make_temp(enctext, decode=False)
     
-    com_list = [xmlsec_binary,
+    com_list = [xmlsec_binary, "--verify",
                 "--pubkey-cert-%s" % cert_type, cert_file, 
                 "--id-attr:%s" % id_attr, node_name]
                 
